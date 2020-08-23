@@ -28,7 +28,10 @@ include( "demos/logging-stack/logging.cmake" )
 
 # Configure options to always show in CMake GUI.
 option( BUILD_TESTS
-        "Set this to ON to build both demo and test executables. When OFF, only demo executables are built."
+        "Set this to ON to build both demo and unit test executables. When OFF, only demo executables are built."
+        OFF )
+option( BUILD_INTEGTESTS
+        "Set this to ON to build integration test executables. When OFF, only demo and/or other test executables are built."
         OFF )
 option( BUILD_CLONE_SUBMODULES
         "Set this to ON to automatically clone any required Git submodules. When OFF, submodules must be manually cloned."
@@ -65,7 +68,7 @@ if(DEFINED ENV{PWD})
     endif()
 endif()
 
-if(BUILD_TESTS)
+if(BUILD_TESTS OR BUILD_INTEGTESTS)
     enable_testing()
 endif()
 

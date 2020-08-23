@@ -1,5 +1,5 @@
 # Configuration for CMock if testing is enabled.
-if( ${BUILD_TESTS} )
+if( ${BUILD_TESTS} OR ${BUILD_INTEGTESTS} )
     # Check if the CMock source directory exists.
     if( NOT EXISTS ${3RDPARTY_DIR}/CMock/src )
         # Attempt to clone CMock.

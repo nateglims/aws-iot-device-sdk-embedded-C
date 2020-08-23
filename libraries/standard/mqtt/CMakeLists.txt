@@ -20,5 +20,7 @@ source_group( src\\private FILES src/private/mqtt_internal.h )
 
 if(BUILD_TESTS)
     add_subdirectory( utest )
+endif()
+if (BUILD_INTEGTESTS)
     add_subdirectory( integration-test )
 endif()
