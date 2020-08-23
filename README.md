@@ -15,6 +15,12 @@ This branch currently hosts development of AWS IoT Embedded C SDK version 4 beta
 
 This SDK builds with [CMake](https://cmake.org/), a cross-platform build tool.
 
+## Testing in Containers
+
+```shell
+docker build -t csdk-test .
+docker run --rm csdk-test:latest make -C build/ all test CTEST_OUTPUT_ON_FAILURE=TRUE
+```
   
 
 ### Prerequisites
