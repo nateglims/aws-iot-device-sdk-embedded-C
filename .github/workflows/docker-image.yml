@@ -1,0 +1,23 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches:
+      - development
+      - ci/*
+  pull_request:
+    branches: [ development ]
+  workflow_dispatch:
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag csdk-test
+    - name: Run Tests
+      run: docker run --rm csdk-test:latest make -C build/ all test CTEST_OUTPUT_ON_FAILURE=TRUE
