@@ -20,4 +20,12 @@ jobs:
     - name: Build the Docker image
       run: docker build . --file Dockerfile --tag csdk-test
     - name: Run Tests
-      run: docker run --rm csdk-test:latest make -C build/ all test CTEST_OUTPUT_ON_FAILURE=TRUE
+      run: docker run --name test csdk-test:latest make -C build/ all test coverage CTEST_OUTPUT_ON_FAILURE=TRUE
+    - name: Copy Coverage Info
+      run: docker cp test:/build/coverage.info coverage.info
+    - name: lcov-cop
+      uses: ChicagoFlutter/lcov-cop@v1.0.2
+      with:
+        path: "./coverage.info"
+        min_coverage: 50
+        exclude: "**/*test*"

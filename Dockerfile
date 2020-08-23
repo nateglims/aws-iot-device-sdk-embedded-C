@@ -1,9 +1,11 @@
 FROM ubuntu:18.04
+
 RUN apt-get update
 RUN apt-get install -y \
     build-essential \
     git \
     libssl-dev \
+    lcov \
     ruby \
     wget
 
@@ -24,6 +26,7 @@ RUN cmake \
     -G "Unix Makefiles" \
     -DCMAKE_BUILD_TYPE=Debug \
     -DCMAKE_C_FLAGS=' \
+        --coverage \
         -DLIBRARY_LOG_LEVEL=LOG_DEBUG \
         -DBROKER_ENDPOINT=\"localhost\" \
         -DROOT_CA_CERT_PATH=\"/ca.crt\" \
