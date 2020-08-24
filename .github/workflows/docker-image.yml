@@ -18,7 +18,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag csdk-test
+      run: docker build . --file Dockerfile --tag csdk-test --target unittest
     - name: Run Tests
       run: docker run --name test csdk-test:latest make -C build/ all test coverage CTEST_OUTPUT_ON_FAILURE=TRUE
     - name: Copy Coverage Info and Strip Test and 3rd Party Coverage
@@ -39,3 +39,14 @@ jobs:
         path: "./coverage.info"
         min_coverage: 99
         exclude: "**/*test*"
+
+  integtest:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build Integration Environment with Docker Compose
+      run: |
+        docker-compose -f docker-compose.yml build
+        docker-compose -f docker-compose.yml up -d
+    - name: Run Tests
+      run: docker exec csdk_integtest make -C build/ all test CTEST_OUTPUT_ON_FAILURE=TRUE

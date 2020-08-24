@@ -1,0 +1,27 @@
+version: '3.4'
+services:
+  csdk:
+    build:
+      context: .
+      target: integtest
+    container_name: csdk_integtest
+    volumes:
+      - cert-volume:/certs
+  mqttbroker:
+    image: "eclipse-mosquitto:latest"
+    ports:
+      - "1883:1883"
+      - "8883:8883"
+    volumes:
+      - cert-volume:/certs:ro
+      - ./tools/ci/mosquitto.conf:/mosquitto/config/mosquitto.conf
+  httpbin:
+    image: "kennethreitz/httpbin"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - cert-volume:/certs:ro
+
+volumes:
+  cert-volume:
