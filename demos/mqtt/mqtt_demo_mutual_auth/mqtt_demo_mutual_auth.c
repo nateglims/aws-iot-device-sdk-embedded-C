@@ -76,42 +76,18 @@
 #include "clock.h"
 
 /**
- * These configuration settings are required to run the mutual auth demo.
- * Throw compilation error if the below configs are not defined.
+ * This is not a great practice, but this is insanely interwoven into the demo.
  */
-#ifndef AWS_IOT_ENDPOINT
-    #error "Please define AWS IoT MQTT broker endpoint(AWS_IOT_ENDPOINT) in demo_config.h."
-#endif
-#ifndef ROOT_CA_CERT_PATH
-    #error "Please define path to Root CA certificate of the MQTT broker(ROOT_CA_CERT_PATH) in demo_config.h."
-#endif
-#ifndef CLIENT_IDENTIFIER
-    #error "Please define a unique client identifier, CLIENT_IDENTIFIER, in demo_config.h."
-#endif
-
-/* The AWS IoT message broker requires either a set of client certificate/private key
- * or username/password to authenticate the client. */
-#ifndef CLIENT_USERNAME
-    #ifndef CLIENT_CERT_PATH
-        #error "Please define path to client certificate(CLIENT_CERT_PATH) in demo_config.h."
-    #endif
-    #ifndef CLIENT_PRIVATE_KEY_PATH
-        #error "Please define path to client private key(CLIENT_PRIVATE_KEY_PATH) in demo_config.h."
-    #endif
-#else
-
-/* If a username is defined, a client password also would need to be defined for
- * client authentication. */
-    #ifndef CLIENT_PASSWORD
-        #error "Please define client password(CLIENT_PASSWORD) in demo_config.h for client authentication based on username/password."
-    #endif
-
-/* AWS IoT MQTT broker port needs to be 443 for client authentication based on
- * username/password. */
-    #if AWS_MQTT_PORT != 443
-        #error "Broker port, AWS_MQTT_PORT, should be defined as 443 in demo_config.h for client authentication based on username/password."
-    #endif
-#endif /* ifndef CLIENT_USERNAME */
+static char * CLIENT_IDENTIFIER;
+static uint16_t CLIENT_IDENTIFIER_LENGTH;
+static char * MQTT_EXAMPLE_TOPIC;
+static uint16_t MQTT_EXAMPLE_TOPIC_LENGTH;
+static char * AWS_IOT_ENDPOINT;
+static uint16_t AWS_IOT_ENDPOINT_LENGTH;
+static char * ROOT_CA_CERT_PATH;
+static char * CLIENT_CERT_PATH;
+static char * CLIENT_CERT_KEY_PATH;
+static char * CLIENT_PRIVATE_KEY_PATH;
 
 /**
  * Provide default values for undefined configuration settings.
@@ -135,16 +111,6 @@
 #ifndef HARDWARE_PLATFORM_NAME
     #define HARDWARE_PLATFORM_NAME    "Posix"
 #endif
-
-/**
- * @brief Length of MQTT server host name.
- */
-#define AWS_IOT_ENDPOINT_LENGTH         ( ( uint16_t ) ( sizeof( AWS_IOT_ENDPOINT ) - 1 ) )
-
-/**
- * @brief Length of client identifier.
- */
-#define CLIENT_IDENTIFIER_LENGTH        ( ( uint16_t ) ( sizeof( CLIENT_IDENTIFIER ) - 1 ) )
 
 /**
  * @brief ALPN (Application-Layer Protocol Negotiation) protocol name for AWS IoT MQTT.
@@ -193,19 +159,6 @@
  */
 #define CONNACK_RECV_TIMEOUT_MS                  ( 1000U )
 
-
-/**
- * @brief The topic to subscribe and publish to in the example.
- *
- * The topic name starts with the client identifier to ensure that each demo
- * interacts with a unique topic name.
- */
-#define MQTT_EXAMPLE_TOPIC                  CLIENT_IDENTIFIER "/example/topic"
-
-/**
- * @brief Length of client MQTT topic.
- */
-#define MQTT_EXAMPLE_TOPIC_LENGTH           ( ( uint16_t ) ( sizeof( MQTT_EXAMPLE_TOPIC ) - 1 ) )
 
 /**
  * @brief The MQTT message published in this example.
@@ -1524,20 +1477,83 @@ int main( int argc,
     ( void ) argc;
     ( void ) argv;
 
-    /* Set the pParams member of the network context with desired transport. */
-    networkContext.pParams = &opensslParams;
+    CLIENT_IDENTIFIER = getenv( "CLIENT_IDENTIFIER" );
 
-    /* Seed pseudo random number generator (provided by ISO C standard library) for
-     * use by retry utils library when retrying failed network operations. */
+    if( CLIENT_IDENTIFIER == NULL )
+    {
+        printf( "CLIENT_IDENTIFIER env var is empty." );
+        returnStatus = EXIT_FAILURE;
+    }
 
-    /* Get current time to seed pseudo random number generator. */
-    ( void ) clock_gettime( CLOCK_REALTIME, &tp );
-    /* Seed pseudo random number generator with nanoseconds. */
-    srand( tp.tv_nsec );
+    MQTT_EXAMPLE_TOPIC = getenv( "MQTT_EXAMPLE_TOPIC" );
 
-    /* Initialize MQTT library. Initialization of the MQTT library needs to be
-     * done only once in this demo. */
-    returnStatus = initializeMqtt( &mqttContext, &networkContext );
+    if( MQTT_EXAMPLE_TOPIC == NULL )
+    {
+        LogError( ( "MQTT_EXAMPLE_TOPIC env var is empty." ) );
+        returnStatus = EXIT_FAILURE;
+    }
+
+    AWS_IOT_ENDPOINT = getenv( "AWS_IOT_ENDPOINT" );
+
+    if( AWS_IOT_ENDPOINT == NULL )
+    {
+        LogError( ( "AWS_IOT_ENDPOINT env var is empty." ) );
+        returnStatus = EXIT_FAILURE;
+    }
+
+    ROOT_CA_CERT_PATH = getenv( "ROOT_CA_CERT_PATH" );
+
+    if( ROOT_CA_CERT_PATH == NULL )
+    {
+        LogError( ( "ROOT_CA_CERT_PATH env var is empty." ) );
+        returnStatus = EXIT_FAILURE;
+    }
+
+    CLIENT_CERT_PATH = getenv( "CLIENT_CERT_PATH" );
+
+    if( CLIENT_CERT_PATH == NULL )
+    {
+        LogError( ( "CLIENT_CERT_PATH env var is empty." ) );
+        returnStatus = EXIT_FAILURE;
+    }
+
+    CLIENT_CERT_KEY_PATH = getenv( "CLIENT_CERT_KEY_PATH" );
+
+    if( CLIENT_CERT_KEY_PATH == NULL )
+    {
+        LogError( ( "CLIENT_CERT_KEY_PATH env var is empty." ) );
+        returnStatus = EXIT_FAILURE;
+    }
+
+    CLIENT_PRIVATE_KEY_PATH = getenv( "CLIENT_PRIVATE_KEY_PATH" );
+
+    if( CLIENT_PRIVATE_KEY_PATH == NULL )
+    {
+        LogError( ( "CLIENT_PRIVATE_KEY_PATH env var is empty." ) );
+        returnStatus = EXIT_FAILURE;
+    }
+
+    if( returnStatus == EXIT_SUCCESS )
+    {
+        CLIENT_IDENTIFIER_LENGTH = strlen( CLIENT_IDENTIFIER );
+        MQTT_EXAMPLE_TOPIC_LENGTH = strlen( MQTT_EXAMPLE_TOPIC );
+        AWS_IOT_ENDPOINT_LENGTH = strlen( AWS_IOT_ENDPOINT );
+
+        /* Set the pParams member of the network context with desired transport. */
+        networkContext.pParams = &opensslParams;
+
+        /* Seed pseudo random number generator (provided by ISO C standard library) for
+         * use by retry utils library when retrying failed network operations. */
+
+        /* Get current time to seed pseudo random number generator. */
+        ( void ) clock_gettime( CLOCK_REALTIME, &tp );
+        /* Seed pseudo random number generator with nanoseconds. */
+        srand( tp.tv_nsec );
+
+        /* Initialize MQTT library. Initialization of the MQTT library needs to be
+         * done only once in this demo. */
+        returnStatus = initializeMqtt( &mqttContext, &networkContext );
+    }
 
     if( returnStatus == EXIT_SUCCESS )
     {

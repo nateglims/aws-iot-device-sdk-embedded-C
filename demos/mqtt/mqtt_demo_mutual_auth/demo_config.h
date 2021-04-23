@@ -85,9 +85,6 @@
  * @note This path is relative from the demo binary created. Update
  * ROOT_CA_CERT_PATH to the absolute path if this demo is executed from elsewhere.
  */
-#ifndef ROOT_CA_CERT_PATH
-    #define ROOT_CA_CERT_PATH    "certificates/AmazonRootCA1.crt"
-#endif
 
 /**
  * @brief Path of the file containing the client certificate.
@@ -146,15 +143,6 @@
  *
  * #define CLIENT_PASSWORD    "...insert here..."
  */
-
-/**
- * @brief MQTT client identifier.
- *
- * No two clients may use the same client identifier simultaneously.
- */
-#ifndef CLIENT_IDENTIFIER
-    #define CLIENT_IDENTIFIER    "testclient"
-#endif
 
 /**
  * @brief Size of the network buffer for MQTT packets.
