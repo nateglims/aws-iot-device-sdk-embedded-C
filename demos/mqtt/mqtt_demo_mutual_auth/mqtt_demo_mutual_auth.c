@@ -66,8 +66,8 @@
 #include "core_mqtt.h"
 #include "core_mqtt_state.h"
 
-/* OpenSSL sockets transport implementation. */
-#include "openssl_posix.h"
+/* mbedtls sockets transport implementation. */
+#include "mbedtls_posix.h"
 
 /*Include backoff algorithm header for retry logic.*/
 #include "backoff_algorithm.h"
@@ -304,7 +304,7 @@ static MQTTSubAckStatus_t globalSubAckStatus = MQTTSubAckFailure;
 /* Each compilation unit must define the NetworkContext struct. */
 struct NetworkContext
 {
-    OpensslParams_t * pParams;
+    TlsTransportParams_t * pParams;
 };
 
 /*-----------------------------------------------------------*/
@@ -510,10 +510,10 @@ static int connectToServerWithBackoffRetries( NetworkContext_t * pNetworkContext
 {
     int returnStatus = EXIT_SUCCESS;
     BackoffAlgorithmStatus_t backoffAlgStatus = BackoffAlgorithmSuccess;
-    OpensslStatus_t opensslStatus = OPENSSL_SUCCESS;
+    TlsTransportStatus_t tlsStatus = TLS_TRANSPORT_SUCCESS;
     BackoffAlgorithmContext_t reconnectParams;
     ServerInfo_t serverInfo;
-    OpensslCredentials_t opensslCredentials;
+    NetworkCredentials_t tlsCredentials;
     uint16_t nextRetryBackOff;
 
     /* Initialize information to connect to the MQTT broker. */
@@ -522,43 +522,20 @@ static int connectToServerWithBackoffRetries( NetworkContext_t * pNetworkContext
     serverInfo.port = AWS_MQTT_PORT;
 
     /* Initialize credentials for establishing TLS session. */
-    memset( &opensslCredentials, 0, sizeof( OpensslCredentials_t ) );
-    opensslCredentials.pRootCaPath = ROOT_CA_CERT_PATH;
+    memset( &tlsCredentials, 0, sizeof( NetworkCredentials_t ) );
+    tlsCredentials.pRootCaPath = ROOT_CA_CERT_PATH;
 
-    /* If #CLIENT_USERNAME is defined, username/password is used for authenticating
-     * the client. */
-    #ifndef CLIENT_USERNAME
-        opensslCredentials.pClientCertPath = CLIENT_CERT_PATH;
-        opensslCredentials.pPrivateKeyPath = CLIENT_PRIVATE_KEY_PATH;
-    #endif
+    tlsCredentials.pClientCertPath = CLIENT_CERT_PATH;
+    tlsCredentials.pPrivateKeyPath = CLIENT_PRIVATE_KEY_PATH;
+
 
     /* AWS IoT requires devices to send the Server Name Indication (SNI)
      * extension to the Transport Layer Security (TLS) protocol and provide
      * the complete endpoint address in the host_name field. Details about
      * SNI for AWS IoT can be found in the link below.
      * https://docs.aws.amazon.com/iot/latest/developerguide/transport-security.html */
-    opensslCredentials.sniHostName = AWS_IOT_ENDPOINT;
+    tlsCredentials.pHostname = AWS_IOT_ENDPOINT;
 
-    if( AWS_MQTT_PORT == 443 )
-    {
-        /* Pass the ALPN protocol name depending on the port being used.
-         * Please see more details about the ALPN protocol for the AWS IoT MQTT
-         * endpoint in the link below.
-         * https://aws.amazon.com/blogs/iot/mqtt-with-tls-client-authentication-on-port-443-why-it-is-useful-and-how-it-works/
-         *
-         * For username and password based authentication in AWS IoT,
-         * #AWS_IOT_PASSWORD_ALPN is used. More details can be found in the
-         * link below.
-         * https://docs.aws.amazon.com/iot/latest/developerguide/custom-authentication.html
-         */
-        #ifdef CLIENT_USERNAME
-            opensslCredentials.pAlpnProtos = AWS_IOT_PASSWORD_ALPN;
-            opensslCredentials.alpnProtosLen = AWS_IOT_PASSWORD_ALPN_LENGTH;
-        #else
-            opensslCredentials.pAlpnProtos = AWS_IOT_MQTT_ALPN;
-            opensslCredentials.alpnProtosLen = AWS_IOT_MQTT_ALPN_LENGTH;
-        #endif
-    }
 
     /* Initialize reconnect attempts and interval */
     BackoffAlgorithm_InitializeParams( &reconnectParams,
@@ -579,13 +556,13 @@ static int connectToServerWithBackoffRetries( NetworkContext_t * pNetworkContext
                    AWS_IOT_ENDPOINT_LENGTH,
                    AWS_IOT_ENDPOINT,
                    AWS_MQTT_PORT ) );
-        opensslStatus = Openssl_Connect( pNetworkContext,
-                                         &serverInfo,
-                                         &opensslCredentials,
-                                         TRANSPORT_SEND_RECV_TIMEOUT_MS,
-                                         TRANSPORT_SEND_RECV_TIMEOUT_MS );
+        tlsStatus = MBedTLS_Connect( pNetworkContext,
+                                     &serverInfo,
+                                     &tlsCredentials,
+                                     TRANSPORT_SEND_RECV_TIMEOUT_MS,
+                                     TRANSPORT_SEND_RECV_TIMEOUT_MS );
 
-        if( opensslStatus != OPENSSL_SUCCESS )
+        if( tlsStatus != TLS_TRANSPORT_SUCCESS )
         {
             /* Generate a random number and get back-off value (in milliseconds) for the next connection retry. */
             backoffAlgStatus = BackoffAlgorithm_GetNextBackoff( &reconnectParams, generateRandomNumber(), &nextRetryBackOff );
@@ -603,7 +580,7 @@ static int connectToServerWithBackoffRetries( NetworkContext_t * pNetworkContext
                 Clock_SleepMs( nextRetryBackOff );
             }
         }
-    } while( ( opensslStatus != OPENSSL_SUCCESS ) && ( backoffAlgStatus == BackoffAlgorithmSuccess ) );
+    } while( ( tlsStatus != TLS_TRANSPORT_SUCCESS ) && ( backoffAlgStatus == BackoffAlgorithmSuccess ) );
 
     return returnStatus;
 }
@@ -1232,8 +1209,8 @@ static int initializeMqtt( MQTTContext_t * pMqttContext,
      * For this demo, TCP sockets are used to send and receive data
      * from network. Network context is SSL context for OpenSSL.*/
     transport.pNetworkContext = pNetworkContext;
-    transport.send = Openssl_Send;
-    transport.recv = Openssl_Recv;
+    transport.send = MBedTLS_Send;
+    transport.recv = MBedTLS_Recv;
 
     /* Fill the values for network buffer. */
     networkBuffer.pBuffer = buffer;
@@ -1470,7 +1447,7 @@ int main( int argc,
     int returnStatus = EXIT_SUCCESS;
     MQTTContext_t mqttContext = { 0 };
     NetworkContext_t networkContext = { 0 };
-    OpensslParams_t opensslParams = { 0 };
+    TlsTransportParams_t tlsParams = { 0 };
     bool clientSessionPresent = false;
     struct timespec tp;
 
@@ -1540,7 +1517,7 @@ int main( int argc,
         AWS_IOT_ENDPOINT_LENGTH = strlen( AWS_IOT_ENDPOINT );
 
         /* Set the pParams member of the network context with desired transport. */
-        networkContext.pParams = &opensslParams;
+        networkContext.pParams = &tlsParams;
 
         /* Seed pseudo random number generator (provided by ISO C standard library) for
          * use by retry utils library when retrying failed network operations. */
@@ -1587,7 +1564,7 @@ int main( int argc,
             }
 
             /* End TLS session, then close TCP connection. */
-            ( void ) Openssl_Disconnect( &networkContext );
+            ( void ) MBedTLS_Disconnect( &networkContext );
 
             LogInfo( ( "Short delay before starting the next iteration....\n" ) );
             sleep( MQTT_SUBPUB_LOOP_DELAY_SECONDS );

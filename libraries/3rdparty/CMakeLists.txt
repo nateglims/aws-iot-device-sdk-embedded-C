@@ -27,3 +27,9 @@ if(${BUILD_TESTS})
 
     target_link_libraries(cmock unity)
 endif()
+
+add_subdirectory(${3RDPARTY_DIR}/mbedtls)
+
+target_compile_definitions( mbedtls
+                            PUBLIC
+                            -DMBEDTLS_CONFIG_FILE="${3RDPARTY_DIR}/mbedtls_config.h")

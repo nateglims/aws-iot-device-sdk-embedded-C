@@ -9,7 +9,6 @@ set(FILEPATH_LOCATIONS
         ${MODULES_DIR}/standard/coreHTTP/httpFilePaths.cmake
         ${MODULES_DIR}/standard/coreJSON/jsonFilePaths.cmake
         ${MODULES_DIR}/standard/coreMQTT/mqttFilePaths.cmake
-        ${MODULES_DIR}/standard/corePKCS11/pkcsFilePaths.cmake
         ${PLATFORM_DIR}/posix/posixFilePaths.cmake
     )
 
@@ -45,15 +44,6 @@ set_source_files_properties(
 # Define any extra sources or includes outside the standard, making sure to use the same prefix.
 set(MQTT_EXTRA_SOURCES
         ${MQTT_SERIALIZER_SOURCES})
-set(PKCS_EXTRA_SOURCES
-        "${MBEDTLS_FILES}"
-        "${COREPKCS11_LOCATION}/source/portable/posix/core_pkcs11_pal.c"
-        "${CORE_PKCS11_3RDPARTY_LOCATION}/mbedtls_utils/mbedtls_utils.c"
-        "${CORE_PKCS11_3RDPARTY_LOCATION}/mbedtls_utils/mbedtls_error.c")
-set(PKCS_EXTRA_INCLUDE_PRIVATE_DIRS
-    PRIVATE
-        "${CORE_PKCS11_3RDPARTY_LOCATION}/mbedtls/include"
-        "${CORE_PKCS11_3RDPARTY_LOCATION}/mbedtls_utils")
 set(OTA_BACKENDS "OTA_HTTP" "OTA_MQTT")
 foreach(ota_backend ${OTA_BACKENDS})
     set("${ota_backend}_EXTRA_INCLUDE_PUBLIC_DIRS"

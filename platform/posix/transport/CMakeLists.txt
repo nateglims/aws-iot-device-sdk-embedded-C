@@ -40,6 +40,17 @@ target_link_libraries( openssl_posix
                           # requires explicit linking.
                           ${CMAKE_DL_LIBS} )
 
+add_library( mbedtls_posix
+  STATIC
+  ${MBEDTLS_TRANSPORT_SOURCES})
+
+target_link_libraries( mbedtls_posix PUBLIC mbedtls sockets_posix )
+target_include_directories( mbedtls_posix
+                            PUBLIC
+                            ${TRANSPORT_INTERFACE_INCLUDE_DIR}
+                            ${3RDPARTY_DIR}/mbedtls/include
+)
+
 # Install transport implementations as libraries.
 if(INSTALL_PLATFORM_ABSTRACTIONS)
     install(TARGETS

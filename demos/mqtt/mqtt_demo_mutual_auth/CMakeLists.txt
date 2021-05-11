@@ -19,7 +19,7 @@ target_link_libraries(
     ${DEMO_NAME}
     PRIVATE
         clock_posix
-        openssl_posix
+        mbedtls_posix
 )
 
 target_include_directories(
