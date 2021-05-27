@@ -149,6 +149,52 @@ TlsTransportStatus_t MBedTLS_Connect( NetworkContext_t * pNetworkContext,
     int exit_code = TLS_TRANSPORT_INTERNAL_ERROR;
     int ret = 1;
 
+    ret = mbedtls_net_connect(
+        &( pNetworkContext->pParams->networkContext ),
+        pNetworkCredentials->pHostname,
+        "8883",
+        MBEDTLS_NET_PROTO_TCP
+        );
+
+    if( ret != 0 )
+    {
+        LogError( ( " failed\n  ! (root) mbedtls_net_connect returned %d\n\n", ret ) );
+        goto exit;
+    }
+
+    while( ( ret = mbedtls_ssl_handshake( &( pNetworkContext->pParams->sslContext.context ) ) ) != 0 )
+    {
+        if( ( ret != MBEDTLS_ERR_SSL_WANT_READ ) && ( ret != MBEDTLS_ERR_SSL_WANT_WRITE ) )
+        {
+            LogError( ( " failed\n  ! mbedtls_ssl_handshake returned -0x%x\n\n", ( unsigned int ) -ret ) );
+            goto exit;
+        }
+    }
+
+    ret = 0;
+    ret = mbedtls_ssl_get_verify_result( &( pNetworkContext->pParams->sslContext.context ) );
+
+    if( ret != 0 )
+    {
+        LogError( ( " failed\n  ! mbedtls_ssl_handshake returned 0x%x\n\n", ret ) );
+        goto exit;
+    }
+
+    LogInfo( ( "Shook hands." ) );
+
+    exit_code = TLS_TRANSPORT_SUCCESS;
+exit:
+    return exit_code;
+}
+
+TlsTransportStatus_t MBedTLS_Init( NetworkContext_t * pNetworkContext,
+                                   const ServerInfo_t * pServerInfo,
+                                   const NetworkCredentials_t * pNetworkCredentials,
+                                   uint32_t sendTimeoutMs,
+                                   uint32_t recvTimeoutMs )
+{
+    int exit_code = TLS_TRANSPORT_INTERNAL_ERROR;
+    int ret = 1;
 
     #if defined( MBEDTLS_DEBUG_C )
         mbedtls_debug_set_threshold( 0 );
@@ -283,39 +329,6 @@ TlsTransportStatus_t MBedTLS_Connect( NetworkContext_t * pNetworkContext,
         &( pNetworkContext->pParams->networkContext ),
         mbedtls_net_send, mbedtls_net_recv, mbedtls_net_recv_timeout
         );
-
-    ret = mbedtls_net_connect(
-        &( pNetworkContext->pParams->networkContext ),
-        pNetworkCredentials->pHostname,
-        "8883",
-        MBEDTLS_NET_PROTO_TCP
-        );
-
-    if( ret != 0 )
-    {
-        LogError( ( " failed\n  ! (root) mbedtls_net_connect returned %d\n\n", ret ) );
-        goto exit;
-    }
-
-    while( ( ret = mbedtls_ssl_handshake( &( pNetworkContext->pParams->sslContext.context ) ) ) != 0 )
-    {
-        if( ( ret != MBEDTLS_ERR_SSL_WANT_READ ) && ( ret != MBEDTLS_ERR_SSL_WANT_WRITE ) )
-        {
-            LogError( ( " failed\n  ! mbedtls_ssl_handshake returned -0x%x\n\n", ( unsigned int ) -ret ) );
-            goto exit;
-        }
-    }
-
-    ret = 0;
-    ret = mbedtls_ssl_get_verify_result( &( pNetworkContext->pParams->sslContext.context ) );
-
-    if( ret != 0 )
-    {
-        LogError( ( " failed\n  ! mbedtls_ssl_handshake returned 0x%x\n\n", ret ) );
-        goto exit;
-    }
-
-    LogInfo( ( "Shook hands." ) );
 
     exit_code = TLS_TRANSPORT_SUCCESS;
 exit:

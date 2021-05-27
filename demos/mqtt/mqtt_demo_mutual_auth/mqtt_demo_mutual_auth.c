@@ -547,6 +547,18 @@ static int connectToServerWithBackoffRetries( NetworkContext_t * pNetworkContext
      * a timeout. Timeout value will exponentially increase until maximum
      * attempts are reached.
      */
+    tlsStatus = MBedTLS_Init( pNetworkContext,
+                              &serverInfo,
+                              &tlsCredentials,
+                              TRANSPORT_SEND_RECV_TIMEOUT_MS,
+                              TRANSPORT_SEND_RECV_TIMEOUT_MS );
+
+    if( tlsStatus != TLS_TRANSPORT_SUCCESS )
+    {
+        returnStatus = EXIT_FAILURE;
+        goto exit;
+    }
+
     do
     {
         /* Establish a TLS session with the MQTT broker. This example connects
@@ -582,6 +594,7 @@ static int connectToServerWithBackoffRetries( NetworkContext_t * pNetworkContext
         }
     } while( ( tlsStatus != TLS_TRANSPORT_SUCCESS ) && ( backoffAlgStatus == BackoffAlgorithmSuccess ) );
 
+exit:
     return returnStatus;
 }
 
@@ -1550,6 +1563,7 @@ int main( int argc,
                 LogError( ( "Failed to connect to MQTT broker %.*s.",
                             AWS_IOT_ENDPOINT_LENGTH,
                             AWS_IOT_ENDPOINT ) );
+                goto exit;
             }
             else
             {
@@ -1571,6 +1585,7 @@ int main( int argc,
         }
     }
 
+exit:
     return returnStatus;
 }
 
