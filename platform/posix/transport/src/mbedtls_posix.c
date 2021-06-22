@@ -198,7 +198,7 @@ TlsTransportStatus_t MBedTLS_Init( NetworkContext_t * pNetworkContext,
     int ret = 1;
 
     #if defined( MBEDTLS_DEBUG_C )
-        mbedtls_debug_set_threshold( 0 );
+        mbedtls_debug_set_threshold( 4 );
     #endif
 
     mbedtls_net_init( &( pNetworkContext->pParams->networkContext ) );
