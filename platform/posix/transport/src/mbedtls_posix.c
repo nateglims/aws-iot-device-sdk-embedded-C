@@ -135,6 +135,7 @@ TlsTransportStatus_t MBedTLS_Disconnect( const NetworkContext_t * pNetworkContex
     }
 
 exit:
+    mbedtls_net_free( &( pNetworkContext->pParams->networkContext ) );
     return TLS_TRANSPORT_SUCCESS;
 }
 
