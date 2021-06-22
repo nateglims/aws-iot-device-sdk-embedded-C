@@ -63,7 +63,7 @@ int32_t MBedTLS_Recv( NetworkContext_t * pNetworkContext,
 {
     int ret = 0;
 
-    LogDebug( ( "recv: receiving %d bytes\n", bytesToRecv ) );
+    LogDebug( ( "recv: receiving %d bytes\n", ( int ) bytesToRecv ) );
 
     ret = mbedtls_ssl_read( &( pNetworkContext->pParams->sslContext.context ), pBuffer, bytesToRecv );
 
@@ -90,7 +90,7 @@ int32_t MBedTLS_Send( NetworkContext_t * pNetworkContext,
 {
     int ret = 0;
 
-    LogDebug( ( "send: sending %d bytes\n", bytesToSend ) );
+    LogDebug( ( "send: sending %d bytes\n", ( int ) bytesToSend ) );
 
     ret = mbedtls_ssl_write( &( pNetworkContext->pParams->sslContext.context ), pBuffer, bytesToSend );
 
