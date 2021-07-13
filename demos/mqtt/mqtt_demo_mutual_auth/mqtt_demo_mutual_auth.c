@@ -79,6 +79,7 @@
  * This is not a great practice, but this is insanely interwoven into the demo.
  */
 static char * CLIENT_IDENTIFIER;
+static char * DEVICEADVISOR_RUN;
 static uint16_t CLIENT_IDENTIFIER_LENGTH;
 static char * MQTT_EXAMPLE_TOPIC;
 static uint16_t MQTT_EXAMPLE_TOPIC_LENGTH;
@@ -212,6 +213,11 @@ static char * CLIENT_PRIVATE_KEY_PATH;
  * @brief Delay in seconds between two iterations of subscribePublishLoop().
  */
 #define MQTT_SUBPUB_LOOP_DELAY_SECONDS      ( 5U )
+
+/**
+ * @brief Delay in seconds before starting a connection to let DeviceAdvisor setup endpoint.
+ */
+#define DEVICEADVISOR_ENDPOINT_SETUP_DELAY_SECONDS      ( 60U )
 
 /**
  * @brief Transport timeout in milliseconds for transport send and receive.
@@ -1467,11 +1473,19 @@ int main( int argc,
     ( void ) argc;
     ( void ) argv;
 
+    DEVICEADVISOR_RUN = getenv( "DEVICEADVISOR_RUN" );
+
+    if( DEVICEADVISOR_RUN == NULL )
+    {
+        LogInfo( ( "DEVICEADVISOR_RUN env var is empty, setting FALSE as default." ) );
+        DEVICEADVISOR_RUN == "FALSE";
+    }
+
     CLIENT_IDENTIFIER = getenv( "CLIENT_IDENTIFIER" );
 
     if( CLIENT_IDENTIFIER == NULL )
     {
-        printf( "CLIENT_IDENTIFIER env var is empty." );
+        LogError( ( "CLIENT_IDENTIFIER env var is empty." ) );
         returnStatus = EXIT_FAILURE;
     }
 
@@ -1547,6 +1561,13 @@ int main( int argc,
 
     if( returnStatus == EXIT_SUCCESS )
     {
+        if( DEVICEADVISOR_RUN == "TRUE" ) {
+            LogInfo( ( "DEVICEADVISOR_RUN is TRUE, sleeping for %d seconds.", DEVICEADVISOR_ENDPOINT_SETUP_DELAY_SECONDS ) );
+            sleep( DEVICEADVISOR_ENDPOINT_SETUP_DELAY_SECONDS );
+        }
+        // TODO: Get the above if block working
+        sleep( DEVICEADVISOR_ENDPOINT_SETUP_DELAY_SECONDS );
+
         for( ; ; )
         {
             /* Attempt to connect to the MQTT broker. If connection fails, retry after
